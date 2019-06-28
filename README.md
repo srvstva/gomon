@@ -1,6 +1,6 @@
 ### **gomon** - tcp based client server for running remote commands
 
-`gomon` uses tcp socket to start and server. Any no of `gomon` client can connect to the server and request for running commands.
+`gomon` uses tcp socket to start and run remote commands. Any no of `gomon` client can connect to the server and request for running commands.
 
 ### Usage
 ---
