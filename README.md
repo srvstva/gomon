@@ -36,3 +36,4 @@ Linux Vostro-15-3568 4.15.0-52-generic #56-Ubuntu SMP Tue Jun 4 22:49:08 UTC 201
 ### How to build and install
 -   Download or clone this [repository](https://github.com/srvstva/gomon)
 -   `cd gomon && go build && go install`
+-   Or run command `go get https://github.com/srvstva/gomon`
