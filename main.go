@@ -24,28 +24,34 @@ type Response struct {
 	Result []byte
 }
 
-func encodeRequest(w io.Writer, r Request) {
+func encode(w io.Writer, i interface{}) {
 	encoder := gob.NewEncoder(w)
-	encoder.Encode(r)
+	encoder.Encode(i)
 }
 
-func decodeRequest(r io.Reader) Request {
-	req := Request{}
+func decode(r io.Reader, i interface{}) {
 	decoder := gob.NewDecoder(r)
-	decoder.Decode(&req)
-	return req
+	decoder.Decode(i)
 }
 
-func encodeResponse(w io.Writer, r Response) {
-	encoder := gob.NewEncoder(w)
-	encoder.Encode(r)
+// Encode the request & write to the writer
+func (r *Request) Encode(w io.Writer) {
+	encode(w, r)
 }
 
-func decodeResponse(r io.Reader) Response {
-	resp := Response{}
-	decoder := gob.NewDecoder(r)
-	decoder.Decode(&resp)
-	return resp
+// Decode the request object back from the reader
+func (r *Request) Decode(reader io.Reader) {
+	decode(reader, r)
+}
+
+// Encode the response & write to the writer
+func (r *Response) Encode(w io.Writer) {
+	encode(w, r)
+}
+
+// Decode the response object back from the reader
+func (r *Response) Decode(reader io.Reader) {
+	decode(reader, r)
 }
 
 var (
@@ -101,7 +107,8 @@ func startServer(port string) {
 	for {
 		c, _ := l.Accept()
 		go func(c net.Conn) {
-			req := decodeRequest(c)
+			req := Request{}
+			req.Decode(c)
 			switch req.Action {
 			case "run":
 				output, err := exec.Command("bash", "-c", req.Command).CombinedOutput()
@@ -112,7 +119,7 @@ func startServer(port string) {
 				if *debug {
 					log.Printf("response object is :%p, resp size: %d\n", &resp, len(resp.Result))
 				}
-				encodeResponse(c, resp)
+				resp.Encode(c)
 				log.Printf("%s [%s]\n", c.RemoteAddr().String(), req.Command)
 				c.Close()
 			default:
@@ -134,8 +141,9 @@ func startClient(host, port, command string) {
 	defer c.Close()
 	log.Printf("Connected to %s\n", c.RemoteAddr().String())
 	req := Request{Action: "run", Command: command}
-	encodeRequest(c, req)
-	resp := decodeResponse(c)
+	req.Encode(c)
+	resp := Response{}
+	resp.Decode(c)
 	if resp.Error != "" {
 		fmt.Println(resp.Error)
 	}
