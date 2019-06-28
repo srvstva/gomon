@@ -20,7 +20,7 @@ type Request struct {
 
 // Response type
 type Response struct {
-	Error  error
+	Error  string
 	Result []byte
 }
 
@@ -51,6 +51,7 @@ func decodeResponse(r io.Reader) Response {
 var (
 	serverCommand = flag.NewFlagSet("serve", flag.ExitOnError)
 	serverPort    = serverCommand.String("port", ":7891", "port to listen on")
+	debug         = serverCommand.Bool("debug", false, "print debug information")
 	clientCommand = flag.NewFlagSet("connect", flag.ExitOnError)
 	remoteHost    = clientCommand.String("remoteHost", "localhost", "hostname/ip to connect to")
 	remotePort    = clientCommand.String("remotePort", ":7891", "remote port to connect to")
@@ -104,7 +105,13 @@ func startServer(port string) {
 			switch req.Action {
 			case "run":
 				output, err := exec.Command("bash", "-c", req.Command).CombinedOutput()
-				resp := Response{Error: err, Result: output}
+				resp := Response{Result: output}
+				if err != nil {
+					resp.Error = err.Error()
+				}
+				if *debug {
+					log.Printf("response object is :%p, resp size: %d\n", &resp, len(resp.Result))
+				}
 				encodeResponse(c, resp)
 				log.Printf("%s [%s]\n", c.RemoteAddr().String(), req.Command)
 				c.Close()
@@ -129,8 +136,8 @@ func startClient(host, port, command string) {
 	req := Request{Action: "run", Command: command}
 	encodeRequest(c, req)
 	resp := decodeResponse(c)
-	if resp.Error != nil {
-		log.Println("error running command", resp.Error)
+	if resp.Error != "" {
+		fmt.Println(resp.Error)
 	}
 	fmt.Print(string(resp.Result))
 }
